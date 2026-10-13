@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 6XZU.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 8/7/12  (full CDRs: 27..34, 52..58, 97..108)
+# Designed windows (anchors excluded): 28..34,53..58,99..107
+path: ../pdb/VHH/6XZU.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 28..34,53..58,99..107
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 28..34,53..58,99..107
+
+exclude:
+  - chain:
+      id: A
+      res_index: 28..34
+  - chain:
+      id: A
+      res_index: 53..58
+  - chain:
+      id: A
+      res_index: 99..107
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 28
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 53
+      num_residues: 5..7
+  - insertion:
+      id: A
+      res_index: 99
+      num_residues: 7..11
+
+reset_res_index:
+  - chain:
+      id: A

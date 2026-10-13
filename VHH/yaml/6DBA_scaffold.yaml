@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 6DBA.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 8/8/16  (full CDRs: 26..33, 51..58, 97..112)
+# Designed windows (anchors excluded): 27..33,52..58,99..111
+path: ../pdb/VHH/6DBA.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 27..33,52..58,99..111
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 27..33,52..58,99..111
+
+exclude:
+  - chain:
+      id: A
+      res_index: 27..33
+  - chain:
+      id: A
+      res_index: 52..58
+  - chain:
+      id: A
+      res_index: 99..111
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 27
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 52
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 99
+      num_residues: 11..15
+
+reset_res_index:
+  - chain:
+      id: A

@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 5VLV.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 8/8/17  (full CDRs: 27..34, 52..59, 98..114)
+# Designed windows (anchors excluded): 28..34,53..59,100..113
+path: ../pdb/VHH/5VLV.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 28..34,53..59,100..113
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 28..34,53..59,100..113
+
+exclude:
+  - chain:
+      id: A
+      res_index: 28..34
+  - chain:
+      id: A
+      res_index: 53..59
+  - chain:
+      id: A
+      res_index: 100..113
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 28
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 53
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 100
+      num_residues: 12..16
+
+reset_res_index:
+  - chain:
+      id: A

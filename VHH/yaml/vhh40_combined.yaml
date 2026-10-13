@@ -1,0 +1,60 @@
+# JN.1 RBD x all 40 VHH frameworks in ONE design spec.
+# Each design independently picks one scaffold at random (schema.py:1946-1949,
+# random.choice over the path list), then that scaffold's own YAML supplies its
+# per-framework CDR ranges and native-anchored insertion ranges.
+#
+# --num_designs is the TOTAL here (one input spec), unlike the 40-spec form where
+# it is per framework. Use --num_designs 300000.
+entities:
+  - file:
+      path: ../pdb/Target/JN1_RBD_clean.pdb
+      include:
+        - chain:
+            id: T
+      binding_types:
+        - chain:
+            id: T
+            binding: 158,159,161,164,166,167
+
+  - file:
+      path:
+        - 1RJC_scaffold.yaml
+        - 1ZVH_scaffold.yaml
+        - 3K1K_scaffold.yaml
+        - 3QXT_scaffold.yaml
+        - 4B50_scaffold.yaml
+        - 4GFT_scaffold.yaml
+        - 4KRO_scaffold.yaml
+        - 4QGY_scaffold.yaml
+        - 5E7B_scaffold.yaml
+        - 5F1O_scaffold.yaml
+        - 5IMK_scaffold.yaml
+        - 5IVN_scaffold.yaml
+        - 5JMR_scaffold.yaml
+        - 5LMW_scaffold.yaml
+        - 5O0W_scaffold.yaml
+        - 5OMN_scaffold.yaml
+        - 5U64_scaffold.yaml
+        - 5VLV_scaffold.yaml
+        - 5VM6_scaffold.yaml
+        - 5VNW_scaffold.yaml
+        - 6DBA_scaffold.yaml
+        - 6H02_scaffold.yaml
+        - 6HEQ_scaffold.yaml
+        - 6JB9_scaffold.yaml
+        - 6LR7_scaffold.yaml
+        - 6WAQ_scaffold.yaml
+        - 6XW6_scaffold.yaml
+        - 6XYF_scaffold.yaml
+        - 6XZU_scaffold.yaml
+        - 7CZ0_scaffold.yaml
+        - 7KN5_scaffold.yaml
+        - 7N9B_scaffold.yaml
+        - 7TJC_scaffold.yaml
+        - 7VNB_scaffold.yaml
+        - 7YZW_scaffold.yaml
+        - 8CDS_scaffold.yaml
+        - 8CDT_scaffold.yaml
+        - 8E2N_scaffold.yaml
+        - 8IJS_scaffold.yaml
+        - 8JZA_scaffold.yaml

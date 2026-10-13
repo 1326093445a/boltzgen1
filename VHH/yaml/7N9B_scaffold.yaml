@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 7N9B.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 6/8/12  (full CDRs: 26..31, 49..56, 95..106)
+# Designed windows (anchors excluded): 27..31,50..56,97..105
+path: ../pdb/VHH/7N9B.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 27..31,50..56,97..105
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 27..31,50..56,97..105
+
+exclude:
+  - chain:
+      id: A
+      res_index: 27..31
+  - chain:
+      id: A
+      res_index: 50..56
+  - chain:
+      id: A
+      res_index: 97..105
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 27
+      num_residues: 4..6
+  - insertion:
+      id: A
+      res_index: 50
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 97
+      num_residues: 7..11
+
+reset_res_index:
+  - chain:
+      id: A

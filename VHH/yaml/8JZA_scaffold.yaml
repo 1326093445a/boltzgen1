@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 8JZA.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 8/8/20  (full CDRs: 26..33, 51..58, 97..116)
+# Designed windows (anchors excluded): 27..33,52..58,99..115
+path: ../pdb/VHH/8JZA.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 27..33,52..58,99..115
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 27..33,52..58,99..115
+
+exclude:
+  - chain:
+      id: A
+      res_index: 27..33
+  - chain:
+      id: A
+      res_index: 52..58
+  - chain:
+      id: A
+      res_index: 99..115
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 27
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 52
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 99
+      num_residues: 15..19
+
+reset_res_index:
+  - chain:
+      id: A

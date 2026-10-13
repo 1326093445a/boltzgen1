@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 8E2N.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 8/11/17  (full CDRs: 28..35, 53..63, 102..118)
+# Designed windows (anchors excluded): 29..35,54..63,104..117
+path: ../pdb/VHH/8E2N.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 29..35,54..63,104..117
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 29..35,54..63,104..117
+
+exclude:
+  - chain:
+      id: A
+      res_index: 29..35
+  - chain:
+      id: A
+      res_index: 54..63
+  - chain:
+      id: A
+      res_index: 104..117
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 29
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 54
+      num_residues: 9..11
+  - insertion:
+      id: A
+      res_index: 104
+      num_residues: 12..16
+
+reset_res_index:
+  - chain:
+      id: A

@@ -1,0 +1,14 @@
+# Wrapper: JN.1 RBD target (hotspot S158,Y159,F161,T164,G166,V167) + 4GFT VHH scaffold.
+entities:
+  - file:
+      path: ../pdb/Target/JN1_RBD_clean.pdb
+      include:
+        - chain:
+            id: T
+      binding_types:
+        - chain:
+            id: T
+            binding: 158,159,161,164,166,167
+
+  - file:
+      path: 4GFT_scaffold.yaml

@@ -1,0 +1,922 @@
+[
+  {
+    "pdb": "1RJC",
+    "fixed": [
+      "VQLQASGGGSVQAGQSLRLSCATSA",
+      "MGWFRQAPGKEREGVAVI",
+      "AYADSVQGRLTISLDNNTLYLQMNSLKPEDTAMYYCAA",
+      "YWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        5,
+        7
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        16,
+        20
+      ]
+    ]
+  },
+  {
+    "pdb": "1ZVH",
+    "fixed": [
+      "DVQLVESGGGSVQAGGSLRLSCAASG",
+      "LGWFRQAPGKEREGVAAV",
+      "YYADSVKGRFTVSLDNAENTVYLQMNSLKPEDTALYYCAA",
+      "YWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        13,
+        17
+      ]
+    ]
+  },
+  {
+    "pdb": "3K1K",
+    "fixed": [
+      "QVQLVESGGALVQPGGSLRLSCAASG",
+      "MRWYRQAPGKEREWVAGM",
+      "SYEDSVKGRFTISRDDARNTVYLQMNSLKPEDTAVYYCNV",
+      "YWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        3,
+        7
+      ]
+    ]
+  },
+  {
+    "pdb": "3QXT",
+    "fixed": [
+      "QVQLVESGGGLVQAGGSLRLSCAASR",
+      "MAWFRQAPGKEREFVAKI",
+      "TYGDSVKGRFTISRDKGKNTVYLQMDSLKPEDTAVYYCAA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "4B50",
+    "fixed": [
+      "EVQLVESGGGLVQPGGSLRLSCAASG",
+      "MSWYRQAPGKQRELVAFI",
+      "NYKVSVKGRFTISRDNSKNMVYLQMNSLKPEDTADYLCRA",
+      "VWGRGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        11,
+        15
+      ]
+    ]
+  },
+  {
+    "pdb": "4GFT",
+    "fixed": [
+      "VQLQESGGGTVQPGGSLKLSCSAAP",
+      "MGWFRQAPGQEREFVAGI",
+      "YYADSVKGRFTISRDNAMNAVYLQMNSVKAEDTAVYYCAA",
+      "YWGQGTQVTVSSH"
+    ],
+    "ranges": [
+      [
+        7,
+        9
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "4KRO",
+    "fixed": [
+      "QVQLQESLSCAASG",
+      "MGWFRQAPGKQREFVAAI",
+      "YYTDSVKGRFTISRDNAKTTVYLQMNSLKPEDTAVYYCAA",
+      "YWGQGTQVTV"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        18,
+        22
+      ]
+    ]
+  },
+  {
+    "pdb": "4QGY",
+    "fixed": [
+      "QVQLVESGGGLVQAGGSLRLSCAASG",
+      "IGWFRQAPGKEREGVSCI",
+      "YYPDSVKGRFTASSDKAKNMVYLQMNSLKPEDTAVYYCAA",
+      "YWGKGTQVTVSSHHHHHH"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        17,
+        21
+      ]
+    ]
+  },
+  {
+    "pdb": "5E7B",
+    "fixed": [
+      "QVQLVESGGGSVQAGGSLRLSCTASG",
+      "MGWYHQAPGNECELVSAI",
+      "YYADSVKGRFTISRDNAKNTVYLQMNSLKPEDTAMYYCAA",
+      "YWGQGTQVTVSSH"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        14,
+        18
+      ]
+    ]
+  },
+  {
+    "pdb": "5F1O",
+    "fixed": [
+      "DVQLQESGGGLVQAGHSLRLSCVGSG",
+      "MGWFRQAPGKEREFVAAI",
+      "RYLDTVKGRFTISRDNAKSTVYLQMNSLKPEDTAVYYCAA",
+      "NWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        16,
+        20
+      ]
+    ]
+  },
+  {
+    "pdb": "5IMK",
+    "fixed": [
+      "QVQLVESGGGLVQAGGSLRLSCAASG",
+      "MGWFRQAPGKEREFVAAI",
+      "YYADSVKGRFTISRDNAKNTVYLQMNSLKPEDTAVYYCAA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        13,
+        17
+      ]
+    ]
+  },
+  {
+    "pdb": "5IVN",
+    "fixed": [
+      "QVQLVESGGGLVQPGGSLTLSCTASG",
+      "IGWFRQAPGKEREGVSCI",
+      "YYADSVKGRFTIFMNNAKDTVYLQMNSLKPEDTAIYYCAE",
+      "FWGQGTQVTVSSK"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        10,
+        14
+      ]
+    ]
+  },
+  {
+    "pdb": "5JMR",
+    "fixed": [
+      "QVQLQESGGGLVQPGGSLTLSCAASG",
+      "MYWVRQAPGKGLEWVSSI",
+      "DYADSVKGRFTISRDNAKNTLYLQMNSLKSEDTALYYCAV",
+      "WRGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        9
+      ]
+    ]
+  },
+  {
+    "pdb": "5LMW",
+    "fixed": [
+      "VQLVESGGGLVQAGDSLRLSCAASG",
+      "MGWFRQAPGREREFVASI",
+      "YGTDSVKGRFAISRDNAKNTMYLQMNSLKPEDTAVYYCAA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        9,
+        13
+      ]
+    ]
+  },
+  {
+    "pdb": "5O0W",
+    "fixed": [
+      "VQLQESGGGLVQPGGSLRLSCAASE",
+      "IGWFRQAPGKEREGVSCI",
+      "DYADSVKGRFTISRDDAKNTVTLQMNSLEPEDTARYYCAL",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        10,
+        12
+      ],
+      [
+        21,
+        25
+      ]
+    ]
+  },
+  {
+    "pdb": "5OMN",
+    "fixed": [
+      "QVQLQESGGGLVQPGGSLRLSCAASG",
+      "MGWYRQAPGKERELVASI",
+      "WYAESVEGRFTISRDNVKNTLYLQMNSLKPEDTAMYYCRD",
+      "SWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        2,
+        6
+      ]
+    ]
+  },
+  {
+    "pdb": "5U64",
+    "fixed": [
+      "DVQLQESGGGSVQAGGSLRLSCVASG",
+      "IGWFRQAKEREGVAVV",
+      "YITDSVKGRFTISRDDTVYLQMNSLKPEDTATYYCAA",
+      "YWGQGTQVTVSSAAAHHH"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        14,
+        18
+      ]
+    ]
+  },
+  {
+    "pdb": "5VLV",
+    "fixed": [
+      "AEVQLVESGGGLVQTGDSLRLSCAASG",
+      "MAWFRQAPGKEREFVAGI",
+      "AYADSVRGRATISRDSAKKTVYLQMNSLKPEDTAVYSCAT",
+      "IWGRGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "5VM6",
+    "fixed": [
+      "VKLQQSGGGMVQTGDSLRLSCVGSR",
+      "VGWFRQIPGKEREFVGGI",
+      "WYADSVKGRFTISKDDAANGVHLQMSSLKPEDTAVYYCAS",
+      "YWGQGTQVTVSSH"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        17,
+        21
+      ]
+    ]
+  },
+  {
+    "pdb": "5VNW",
+    "fixed": [
+      "QVQLQESGGGLVQAGGSLRLSCAASG",
+      "MGWYRQAPGKEREFVATI",
+      "YYADSVKGRFTISRDNAKNTVYLQMNSLKPEDTAVYYCAV",
+      "YWGQGTQVTVSSLE"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        7,
+        11
+      ]
+    ]
+  },
+  {
+    "pdb": "6DBA",
+    "fixed": [
+      "QVKLEESGGGSVQAGGSLRLSCAASG",
+      "MGWFRQVPGKEREGVARI",
+      "WYADSVRDRFTISQDNAKNTVYLQMNSLKLEDTAIYYCTL",
+      "VWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        11,
+        15
+      ]
+    ]
+  },
+  {
+    "pdb": "6H02",
+    "fixed": [
+      "QVQLVESGGGLVQAGASLRLSCAVSG",
+      "MGWFRQAPGKEREVVART",
+      "KYADSVKGRVAISRDIAKNTLYLQMNNLKPEDTAVYYCAA",
+      "YWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "6HEQ",
+    "fixed": [
+      "VQLQESGGGLVQPGGSLRLSCAASG",
+      "MGWFRQAPGKGREFVASI",
+      "DYTDSVKGRFTISRDNAKNTMYLQMNNLKPEDTATYYCAR",
+      "HWQQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "6JB9",
+    "fixed": [
+      "SDVQLVESGGGSVQAGGSLRLSCAASG",
+      "MTWFRQAPGKAREGVAAL",
+      "YYTDSVKGRFTISQDKAKNMAYLRMDSVKSEDTAIYTCGA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        15,
+        19
+      ]
+    ]
+  },
+  {
+    "pdb": "6LR7",
+    "fixed": [
+      "VQLVESGGRLVQAGDSLRLSCAASG",
+      "MAWFRQAPGREREFVAAI",
+      "ILGDSVKGRFTISRDRAKNTVDLQMDNLEPEDTAVYYCSA",
+      "YWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        15,
+        19
+      ]
+    ]
+  },
+  {
+    "pdb": "6WAQ",
+    "fixed": [
+      "QVQLQESGGGLVQAGGSLRLSCAASG",
+      "MGWFRQAPGKEREFVATI",
+      "YYTDSVKGRFTISRDNAKNTVYLQMNSLKPDDTAVYYCAA",
+      "YWGQGTQVTVSSGS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        13,
+        17
+      ]
+    ]
+  },
+  {
+    "pdb": "6XW6",
+    "fixed": [
+      "VQLQESGGGLVQAGDSLRVSCAASG",
+      "MGWFRQAPGKEREFVAAI",
+      "YYLDSVKGRFTTSRDNAKNTVYLQLNNLKPEDTAIYYCAA",
+      "DWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        16,
+        20
+      ]
+    ]
+  },
+  {
+    "pdb": "6XYF",
+    "fixed": [
+      "VQLQESGGGLVQAGGSLRLSCAASG",
+      "MAWFRQAPGKAREFAAGI",
+      "DYEDSVKGRFTISRDNAKNTMYLQMNSLKPEDTAVYYCAA",
+      "YWGKGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        14,
+        18
+      ]
+    ]
+  },
+  {
+    "pdb": "6XZU",
+    "fixed": [
+      "MQVQLVESGGGLVQAGGSLRLSCVVSG",
+      "MGWYRQAAGEQRELVAAI",
+      "NYIDSVKGRFTISRDNAKTTVYLQMNSLKPEDTAVYYCNL",
+      "KWGQGTQVTVSSLE"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        7,
+        11
+      ]
+    ]
+  },
+  {
+    "pdb": "7CZ0",
+    "fixed": [
+      "QVQLVESGGGLVQAGGSLRLSCAASG",
+      "MHWYRQAPGKEREWVAAI",
+      "FYADSVKGRFTISRDNAKNTVYLQMNSLKPEDTAVYYCTV",
+      "YRGQGTQVTVSA"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        3,
+        7
+      ]
+    ]
+  },
+  {
+    "pdb": "7KN5",
+    "fixed": [
+      "QVQLVETGGGFVQPGGSLRLSCAASG",
+      "IGWFRQAPGKEREGVSCI",
+      "YYSDSVKGRFTISRDNAKNTVYLQMNSLKPEDTAVYYCAL",
+      "YWGKGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        17,
+        21
+      ]
+    ]
+  },
+  {
+    "pdb": "7N9B",
+    "fixed": [
+      "QVQLVESGGGLVQAGGSLRLSCAVSG",
+      "VGWFRRAPGKEREFVAAI",
+      "NYLDSVKGRFTISRDNAKNTIYLQMNSLKPQDTAVYYCAA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        4,
+        6
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        7,
+        11
+      ]
+    ]
+  },
+  {
+    "pdb": "7TJC",
+    "fixed": [
+      "VQLVESGGGLVQAGGSLRLSCAASG",
+      "MGWFRQAPGKEREFVAAI",
+      "YYADSVKGRFTISRDNAKNTVYLQMNSLKPEDTAVYYCAA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "7VNB",
+    "fixed": [
+      "EVQLVESGGGLVQPGGSLRLSCAASD",
+      "MSWVRQAPGKALEWIGSM",
+      "YINPSLKSLVTISRDNSKNTLYLQMNSLRAEDTAMYYCVS",
+      "YWGQGTLVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        7,
+        11
+      ]
+    ]
+  },
+  {
+    "pdb": "7YZW",
+    "fixed": [
+      "QVQLVESGGGLVQPGGSLRLSCAASG",
+      "MGWFRQDPGKEREFVAAL",
+      "AYADSVKGRFTISRDNAKNTLYLQMNNPKPEDTAVYYCAR",
+      "YWGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "8CDS",
+    "fixed": [
+      "SQVQLVESGGGVVQTGDSLMLSCTVSG",
+      "MGWFRQTPRKQREFVAAI",
+      "IYGNSVKGRFTVSRDNAKNMVYLRMNSLKPEDTAVYFCAV",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        13,
+        17
+      ]
+    ]
+  },
+  {
+    "pdb": "8CDT",
+    "fixed": [
+      "DVQLVESGGGLVQPGGSLRLSCVASG",
+      "MGWVRQAPGKGLEWVSDI",
+      "GYADSVKGRFAISRDNAKNTLYLQMNRLKPEDTAVYYCAK",
+      "PAGQGTQVTVS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        11,
+        15
+      ]
+    ]
+  },
+  {
+    "pdb": "8E2N",
+    "fixed": [
+      "MAEVQLVESGGGLVPAGGSLRLSCTTSE",
+      "MGWFRQAPGKEREFVAAV",
+      "VVADSVAGRFTIFRDNAKNTVYLQMNSLKPEDTAVYYCNG",
+      "SWGHGTQVTVSSGQ"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        9,
+        11
+      ],
+      [
+        12,
+        16
+      ]
+    ]
+  },
+  {
+    "pdb": "8IJS",
+    "fixed": [
+      "QLVESGGGLVNPGGSLRLSCAAST",
+      "MGWFRQAPGKEREFVVAI",
+      "YDAGRFTISRDNAKNTVYLQINSLRPEDTAVYYCAS",
+      "YWGQGTLVTVSS"
+    ],
+    "ranges": [
+      [
+        4,
+        6
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        14,
+        18
+      ]
+    ]
+  },
+  {
+    "pdb": "8JZA",
+    "fixed": [
+      "DVQLQASGGGSVQTGGSLRLSCAASG",
+      "MAWFRQVPGKEREGLAFI",
+      "HYEGSAKDRFGISRDNAQNTMYLQMNGLKPEDTAMYYCAA",
+      "YWGQGTQVTVSS"
+    ],
+    "ranges": [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        15,
+        19
+      ]
+    ]
+  }
+]

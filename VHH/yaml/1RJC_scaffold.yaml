@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 1RJC.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 7/8/21  (full CDRs: 25..31, 49..56, 93..113)
+# Designed windows (anchors excluded): 26..31,50..56,95..112
+path: ../pdb/VHH/1RJC.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 26..31,50..56,95..112
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 26..31,50..56,95..112
+
+exclude:
+  - chain:
+      id: A
+      res_index: 26..31
+  - chain:
+      id: A
+      res_index: 50..56
+  - chain:
+      id: A
+      res_index: 95..112
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 26
+      num_residues: 5..7
+  - insertion:
+      id: A
+      res_index: 50
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 95
+      num_residues: 16..20
+
+reset_res_index:
+  - chain:
+      id: A

@@ -1,0 +1,51 @@
+# Auto-generated JN.1 RBD VHH job for 5O0W.
+# Interface-proximal CDR design mask; CDR stems held native as anchors.
+# Native ANARCI/IMGT CDR lengths: 8/12/26  (full CDRs: 25..32, 50..61, 100..125)
+# Designed windows (anchors excluded): 26..32,51..61,102..124
+path: ../pdb/VHH/5O0W.pdb
+include:
+  - chain:
+      id: A
+
+design:
+  - chain:
+      id: A
+      res_index: 26..32,51..61,102..124
+
+structure_groups:
+  - group:
+      id: A
+      visibility: 2
+  - group:
+      id: A
+      visibility: 0
+      res_index: 26..32,51..61,102..124
+
+exclude:
+  - chain:
+      id: A
+      res_index: 26..32
+  - chain:
+      id: A
+      res_index: 51..61
+  - chain:
+      id: A
+      res_index: 102..124
+
+design_insertions:
+  - insertion:
+      id: A
+      res_index: 26
+      num_residues: 6..8
+  - insertion:
+      id: A
+      res_index: 51
+      num_residues: 10..12
+  - insertion:
+      id: A
+      res_index: 102
+      num_residues: 21..25
+
+reset_res_index:
+  - chain:
+      id: A
