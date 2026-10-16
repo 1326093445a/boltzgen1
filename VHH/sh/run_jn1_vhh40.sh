@@ -24,6 +24,9 @@
 #   FOLD_BATCH=15        refolding batch size (independent designs per forward)
 #   FOLD_SAMPLES=1       structures refolded per design; see note
 #   FOLD_RECYCLING=3     recycling steps for refolding
+#   ESM_SAMPLES=1        structures per design in esmfold2_scoring
+#   ESM_LOOPS=20         esmfold2 trunk loops; the dominant cost, see note
+#   ESM_ACCEL=auto       auto | fused | off, see note
 #   SPEC=                override the design spec path
 #
 # Output: pass it as the first argument, absolute path recommended:
@@ -65,6 +68,23 @@
 # more only if you want a per-design spread to rank on rather than a point
 # estimate. confidence_chunk_size is always set equal to it, which is the
 # condition that lets FOLD_BATCH exceed 1.
+#
+# NOTE on ESM_SAMPLES / ESM_LOOPS: esmfold2_scoring runs on every design, with
+# no pre-filter, so its cost is set the same way. ESM_SAMPLES is its
+# diffusion_samples; 1 matches FOLD_SAMPLES. ESM_LOOPS is the trunk recycling
+# count and is the dominant term - cost is roughly linear in it - so it is the
+# first thing to lower if this step is too slow. 20 is the upstream default and
+# is kept here; on a separate antibody benchmark, 3 loops versus 10 changed
+# binder/non-binder AUROC by under 0.01, so the default may be far more than
+# needed.
+#
+# NOTE on ESM_ACCEL: 'auto' only applies CUDA-graph replay to crops of at most
+# 256 tokens, 'fused' raises that to 512 and enables BF16 kernels. A VHH plus
+# the JN.1 RBD is around 350 tokens, so 'auto' may be silently skipping
+# acceleration entirely. Check crop_tokens in any esmfold2 result JSON
+# (input_audit.crop_tokens); if it is between 257 and 512, 'fused' is worth
+# using. It changes kernels, so scores shift slightly - do not mix modes within
+# one comparison.
 #
 # Measured on 8x H200 (143771 MiB each), FOLD_BATCH=10 x 5 samples:
 #     51.5 GiB per card, 99-100% util, 624-678W of a 700W cap.
@@ -119,6 +139,9 @@ BUDGET="${BUDGET:-1000}"
 FOLD_BATCH="${FOLD_BATCH:-15}"
 FOLD_SAMPLES="${FOLD_SAMPLES:-1}"
 FOLD_RECYCLING="${FOLD_RECYCLING:-3}"
+ESM_SAMPLES="${ESM_SAMPLES:-1}"
+ESM_LOOPS="${ESM_LOOPS:-20}"
+ESM_ACCEL="${ESM_ACCEL:-auto}"
 REUSE="${REUSE:-true}"
 ALPHA="${ALPHA:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
@@ -126,9 +149,10 @@ EXTRA_ARGS="${EXTRA_ARGS:-}"
 [[ -f "${SPEC}" ]] || { echo "Design spec not found: ${SPEC}" >&2; exit 1; }
 
 if [[ "${EXTRA_ARGS}" == *diffusion_samples* || "${EXTRA_ARGS}" == *confidence_chunk_size* ]]; then
-  echo "ERROR: set FOLD_SAMPLES instead of overriding diffusion_samples or" >&2
-  echo "       confidence_chunk_size through EXTRA_ARGS. They must stay equal," >&2
-  echo "       and a second --config folding group would drop the first." >&2
+  echo "ERROR: set FOLD_SAMPLES (or ESM_SAMPLES) instead of overriding" >&2
+  echo "       diffusion_samples or confidence_chunk_size through EXTRA_ARGS." >&2
+  echo "       For folding the two must stay equal or the confidence module" >&2
+  echo "       takes its chunked path and asserts a batch of 1." >&2
   exit 1
 fi
 N_FW="$(grep -c '_scaffold\.yaml' "${SPEC}" || true)"
@@ -153,6 +177,7 @@ echo "Diffusion batch:  ${DIFF_BATCH}  -> $(( NUM_DESIGNS / DIFF_BATCH )) indepe
 echo "Final set budget: ${BUDGET} (global across frameworks)"
 echo "Refold batch:     ${FOLD_BATCH}  (x${FOLD_SAMPLES} diffusion samples = $(( FOLD_BATCH * FOLD_SAMPLES )) structures in flight)"
 echo "Refold samples:   ${FOLD_SAMPLES} structure(s) per design, ${FOLD_RECYCLING} recycling steps"
+echo "ESMFold2:         ${ESM_SAMPLES} sample(s), ${ESM_LOOPS} loops, acceleration=${ESM_ACCEL}"
 echo "Hotspot:          chain T 158,159,161,164,166,167"
 echo "Output:           ${OUT}"
 echo ""
@@ -165,6 +190,8 @@ boltzgen run "${SPEC}" \
   --diffusion_batch_size "${DIFF_BATCH}" \
   --budget "${BUDGET}" \
   --config folding data.cfg.batch_size="${FOLD_BATCH}" recycling_steps="${FOLD_RECYCLING}" diffusion_samples="${FOLD_SAMPLES}" confidence_chunk_size="${FOLD_SAMPLES}" \
+  --config esmfold2_scoring diffusion_samples="${ESM_SAMPLES}" num_loops="${ESM_LOOPS}" \
+  --esmfold2_acceleration "${ESM_ACCEL}" \
   "${OPT[@]}"
 set +x
 
