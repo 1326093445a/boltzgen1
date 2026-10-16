@@ -578,7 +578,9 @@ class AtomDiffusion(Module):
 
             if self.coordinate_augmentation_inference:
                 random_R, random_tr = compute_random_augmentation(
-                    multiplicity, device=atom_coords.device, dtype=atom_coords.dtype
+                    atom_coords.shape[0],
+                    device=atom_coords.device,
+                    dtype=atom_coords.dtype,
                 )
                 atom_coords = (
                     torch.einsum("bmd,bds->bms", atom_coords, random_R) + random_tr
