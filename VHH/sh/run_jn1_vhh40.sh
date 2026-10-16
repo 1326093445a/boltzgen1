@@ -22,6 +22,8 @@
 #   DIFF_BATCH=1         see note; 1 keeps every design an independent draw
 #   BUDGET=1000          size of the final diversity-optimised set (global)
 #   FOLD_BATCH=15        refolding batch size (independent designs per forward)
+#   FOLD_SAMPLES=1       structures refolded per design; see note
+#   FOLD_RECYCLING=3     recycling steps for refolding
 #   SPEC=                override the design spec path
 #
 # Output: pass it as the first argument, absolute path recommended:
@@ -52,7 +54,17 @@
 # --diffusion_batch_size, which the CLI passes through as diffusion_samples
 # (several structures from one trunk run). Both multiply the work in flight:
 #     structures in flight = FOLD_BATCH * diffusion_samples
-# At FOLD_BATCH=15 with fold.yaml's diffusion_samples=5 that is 75.
+# At FOLD_BATCH=15 with FOLD_SAMPLES=1 that is 15.
+#
+# NOTE on FOLD_SAMPLES: this is diffusion_samples for the folding step - how
+# many structures each design is refolded into. It multiplies the whole step.
+# Measured on 8x H200 at FOLD_BATCH=10, 73.5 s per iteration with 5 samples:
+#     5 samples -> 1.5M structures -> ~77 h
+#     1 sample  -> 300k structures -> ~16 h
+# 1 is the default, matching the 200k production run in the boltzgen repo. Use
+# more only if you want a per-design spread to rank on rather than a point
+# estimate. confidence_chunk_size is always set equal to it, which is the
+# condition that lets FOLD_BATCH exceed 1.
 #
 # Measured on 8x H200 (143771 MiB each), FOLD_BATCH=10 x 5 samples:
 #     51.5 GiB per card, 99-100% util, 624-678W of a 700W cap.
@@ -105,17 +117,18 @@ NUM_DESIGNS="${NUM_DESIGNS:-300000}"
 DIFF_BATCH="${DIFF_BATCH:-5}"
 BUDGET="${BUDGET:-1000}"
 FOLD_BATCH="${FOLD_BATCH:-15}"
+FOLD_SAMPLES="${FOLD_SAMPLES:-1}"
+FOLD_RECYCLING="${FOLD_RECYCLING:-3}"
 REUSE="${REUSE:-true}"
 ALPHA="${ALPHA:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
 [[ -f "${SPEC}" ]] || { echo "Design spec not found: ${SPEC}" >&2; exit 1; }
 
-if [[ "${FOLD_BATCH}" != "1" && "${EXTRA_ARGS}" == *diffusion_samples* \
-      && "${EXTRA_ARGS}" != *confidence_chunk_size* ]]; then
-  echo "ERROR: EXTRA_ARGS overrides diffusion_samples without setting" >&2
-  echo "       confidence_chunk_size to match. With FOLD_BATCH > 1 the folding" >&2
-  echo "       step will fail on its first prediction. See NOTE on FOLD_BATCH." >&2
+if [[ "${EXTRA_ARGS}" == *diffusion_samples* || "${EXTRA_ARGS}" == *confidence_chunk_size* ]]; then
+  echo "ERROR: set FOLD_SAMPLES instead of overriding diffusion_samples or" >&2
+  echo "       confidence_chunk_size through EXTRA_ARGS. They must stay equal," >&2
+  echo "       and a second --config folding group would drop the first." >&2
   exit 1
 fi
 N_FW="$(grep -c '_scaffold\.yaml' "${SPEC}" || true)"
@@ -138,7 +151,8 @@ if [[ "${N_FW}" -gt 0 ]]; then
 fi
 echo "Diffusion batch:  ${DIFF_BATCH}  -> $(( NUM_DESIGNS / DIFF_BATCH )) independent framework+length draws"
 echo "Final set budget: ${BUDGET} (global across frameworks)"
-echo "Refold batch:     ${FOLD_BATCH}  (x5 diffusion samples = $(( FOLD_BATCH * 5 )) structures in flight)"
+echo "Refold batch:     ${FOLD_BATCH}  (x${FOLD_SAMPLES} diffusion samples = $(( FOLD_BATCH * FOLD_SAMPLES )) structures in flight)"
+echo "Refold samples:   ${FOLD_SAMPLES} structure(s) per design, ${FOLD_RECYCLING} recycling steps"
 echo "Hotspot:          chain T 158,159,161,164,166,167"
 echo "Output:           ${OUT}"
 echo ""
@@ -150,7 +164,7 @@ boltzgen run "${SPEC}" \
   --num_designs "${NUM_DESIGNS}" \
   --diffusion_batch_size "${DIFF_BATCH}" \
   --budget "${BUDGET}" \
-  --config folding data.cfg.batch_size="${FOLD_BATCH}" \
+  --config folding data.cfg.batch_size="${FOLD_BATCH}" recycling_steps="${FOLD_RECYCLING}" diffusion_samples="${FOLD_SAMPLES}" confidence_chunk_size="${FOLD_SAMPLES}" \
   "${OPT[@]}"
 set +x
 
