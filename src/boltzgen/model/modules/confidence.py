@@ -112,46 +112,74 @@ class ConfidenceModule(nn.Module):
         multiplicity=1,
         s_diffusion=None,
         run_sequentially=False,
+        confidence_chunk_size: int = 0,
         use_kernels: bool = False,
     ):
-        if run_sequentially and multiplicity > 1:
-            assert z.shape[0] == 1, "Not supported with batch size > 1"
+        # Determine effective chunk size for processing multiple samples
+        # confidence_chunk_size > 0 takes priority; run_sequentially=True sets chunk=1
+        chunk_size = confidence_chunk_size if confidence_chunk_size > 0 else (1 if run_sequentially else 0)
+
+        if chunk_size > 0 and multiplicity > chunk_size:
+            assert z.shape[0] == 1, "Chunked confidence not supported with batch size > 1"
             out_dicts = []
-            for sample_idx in range(multiplicity):
-                out_dicts.append(  # noqa: PERF401
+            for chunk_start in range(0, multiplicity, chunk_size):
+                chunk_end = min(chunk_start + chunk_size, multiplicity)
+                chunk_mult = chunk_end - chunk_start
+                out_dicts.append(
                     self.forward(
                         s_inputs,
                         s,
                         z,
-                        x_pred[sample_idx : sample_idx + 1],
+                        x_pred[chunk_start:chunk_end],
                         feats,
                         pred_distogram_logits,
-                        multiplicity=1,
+                        multiplicity=chunk_mult,
                         s_diffusion=(
-                            s_diffusion[sample_idx : sample_idx + 1]
+                            s_diffusion[chunk_start:chunk_end]
                             if s_diffusion is not None
                             else None
                         ),
                         run_sequentially=False,
+                        confidence_chunk_size=0,
                         use_kernels=use_kernels,
                     )
                 )
 
             out_dict = {}
+            dict_keys = {"pair_chains_iptm", "chain_pair_ipsae"}
             for key in out_dicts[0]:
-                if key != "pair_chains_iptm" and key != "chain_pair_ipsae":
+                # Check if ANY chunk returned a dict for this key
+                has_dict = any(isinstance(out[key], dict) for out in out_dicts)
+                if key not in dict_keys or not has_dict:
+                    # All tensors — cat along batch dim
                     out_dict[key] = torch.cat([out[key] for out in out_dicts], dim=0)
                 else:
-                    pair_chains_dict = {}
-                    for chain_idx1 in out_dicts[0][key]:
-                        chains_dict = {}
-                        for chain_idx2 in out_dicts[0][key][chain_idx1]:
-                            chains_dict[chain_idx2] = torch.cat(
-                                [out[key][chain_idx1][chain_idx2] for out in out_dicts],
-                                dim=0,
-                            )
-                        pair_chains_dict[chain_idx1] = chains_dict
-                    out_dict[key] = pair_chains_dict
+                    # At least one dict — use the first dict as reference
+                    ref = next(out[key] for out in out_dicts if isinstance(out[key], dict))
+                    merged = {}
+                    for chain_idx1 in ref:
+                        inner_ref = ref[chain_idx1]
+                        if isinstance(inner_ref, dict):
+                            inner = {}
+                            for chain_idx2 in inner_ref:
+                                parts = []
+                                for out in out_dicts:
+                                    v = out[key]
+                                    if isinstance(v, dict) and chain_idx1 in v and isinstance(v[chain_idx1], dict):
+                                        parts.append(v[chain_idx1][chain_idx2])
+                                    # Skip non-dict chunks (error fallback)
+                                if parts:
+                                    inner[chain_idx2] = torch.cat(parts, dim=0)
+                            merged[chain_idx1] = inner
+                        else:
+                            parts = []
+                            for out in out_dicts:
+                                v = out[key]
+                                if isinstance(v, dict) and chain_idx1 in v:
+                                    parts.append(v[chain_idx1])
+                            if parts:
+                                merged[chain_idx1] = torch.cat(parts, dim=0)
+                    out_dict[key] = merged
             return out_dict
 
         s_inputs = self.s_inputs_norm(s_inputs)
@@ -278,7 +306,7 @@ class ConfidenceHeads(nn.Module):
         multiplicity=1,
     ):
         if self.use_separate_heads:
-            asym_id_token = feats["asym_id"]
+            asym_id_token = feats["asym_id"].repeat_interleave(multiplicity, 0)
             is_same_chain = asym_id_token.unsqueeze(-1) == asym_id_token.unsqueeze(-2)
             is_different_chain = ~is_same_chain
 
@@ -397,9 +425,13 @@ class ConfidenceHeads(nn.Module):
             complex_plddt = (plddt * atom_pad_mask).sum(dim=-1) / atom_pad_mask.sum(
                 dim=-1
             )
-            token_type = feats["mol_type"].float()
-            atom_to_token = feats["atom_to_token"].float()
-            chain_id_token = feats["asym_id"].float()
+            token_type = feats["mol_type"].float().repeat_interleave(multiplicity, 0)
+            atom_to_token = feats["atom_to_token"].float().repeat_interleave(
+                multiplicity, 0
+            )
+            chain_id_token = feats["asym_id"].float().repeat_interleave(
+                multiplicity, 0
+            )
             atom_type = torch.bmm(atom_to_token, token_type.unsqueeze(-1)).squeeze(-1)
             is_ligand_atom = (atom_type == const.chain_type_ids["NONPOLYMER"]).float()
             d_atom = torch.cdist(x_pred, x_pred)
@@ -422,9 +454,9 @@ class ConfidenceHeads(nn.Module):
                 + atom_non_interface_mask * non_interface_weight
             )
 
-            complex_iplddt = (plddt * feats["atom_pad_mask"] * iplddt_weight).sum(
-                dim=-1
-            ) / torch.sum(feats["atom_pad_mask"] * iplddt_weight, dim=-1)
+            complex_iplddt = (plddt * atom_pad_mask * iplddt_weight).sum(dim=-1) / (
+                torch.sum(atom_pad_mask * iplddt_weight, dim=-1) + 1e-5
+            )
 
         # Compute the gPDE and giPDE
         pde = compute_aggregated_metric(pde_logits, end=32)
@@ -515,12 +547,12 @@ class ConfidenceHeads(nn.Module):
             feats["chain_design_mask"].float()
             if feats["design_mask"].sum() > 0
             else feats["design_mask"].float()
-        )
+        ).repeat_interleave(multiplicity, 0)
         is_target_token = (
             1 - feats["chain_design_mask"].float()
             if feats["design_mask"].sum() > 0
-            else feats["design_mask"].float()
-        )
+            else 1 - feats["design_mask"].float()
+        ).repeat_interleave(multiplicity, 0)
         target_designchain_inter_mask = token_pad_pair_mask * (
             is_chain_design_token[:, :, None] * is_target_token[:, None, :]
             + is_target_token[:, :, None] * is_chain_design_token[:, None, :]
@@ -528,11 +560,12 @@ class ConfidenceHeads(nn.Module):
         interaction_pae = (pae * target_designchain_inter_mask).sum(dim=(1, 2)) / (
             target_designchain_inter_mask.sum(dim=(1, 2)) + 1e-5
         )
-        min_interaction_pae = torch.min(
-            pae + (1 - target_designchain_inter_mask) * 100000
-        )[None]
+        _masked_pae_inter = pae + (1 - target_designchain_inter_mask) * 100000
+        min_interaction_pae = _masked_pae_inter.reshape(_masked_pae_inter.shape[0], -1).min(dim=-1).values
 
-        is_design_token = feats["design_mask"].float()
+        is_design_token = feats["design_mask"].float().repeat_interleave(
+            multiplicity, 0
+        )
         target_design_inter_mask = token_pad_pair_mask * (
             is_design_token[:, :, None] * is_target_token[:, None, :]
             + is_target_token[:, :, None] * is_design_token[:, None, :]
@@ -540,9 +573,8 @@ class ConfidenceHeads(nn.Module):
         interaction_pae = (pae * target_design_inter_mask).sum(dim=(1, 2)) / (
             target_design_inter_mask.sum(dim=(1, 2)) + 1e-5
         )
-        min_design_to_target_pae = torch.min(
-            pae + (1 - target_design_inter_mask) * 100000
-        )[None]
+        _masked_pae_dt = pae + (1 - target_design_inter_mask) * 100000
+        min_design_to_target_pae = _masked_pae_dt.reshape(_masked_pae_dt.shape[0], -1).min(dim=-1).values
 
         out_dict = dict(
             pde_logits=pde_logits,
@@ -589,7 +621,7 @@ class ConfidenceHeads(nn.Module):
                 design_ipsae_min,
                 design_to_target_ipsae,
                 target_to_design_ipsae,
-                chain_pair_ipsae
+                chain_pair_ipsae,
             ) = compute_ptms(pae_logits, x_pred, feats, multiplicity)
             out_dict["ptm"] = ptm
             out_dict["iptm"] = iptm
@@ -622,6 +654,6 @@ class ConfidenceHeads(nn.Module):
             out_dict["design_ipsae_min"] = torch.zeros_like(complex_plddt)
             out_dict["design_to_target_ipsae"] = torch.zeros_like(complex_plddt)
             out_dict["target_to_design_ipsae"] = torch.zeros_like(complex_plddt)
-            out_dict["chain_pair_ipsae"] = torch.zeros_like(complex_plddt)
+            out_dict["chain_pair_ipsae"] = {}
 
         return out_dict

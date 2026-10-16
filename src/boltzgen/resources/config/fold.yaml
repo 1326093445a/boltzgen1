@@ -49,6 +49,7 @@ matmul_precision: null
 recycling_steps: 3
 sampling_steps: 200
 diffusion_samples: 5
+confidence_chunk_size: 5  # all 5 diffusion samples in one confidence pass
 
 override:
   validators: null

@@ -241,11 +241,13 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
 
     # compute design and target iPTM and PTM
     if feats["design_mask"].sum()>0:
-        is_chain_design_token = feats["chain_design_mask"].float()
-        is_target_token = 1 - feats["chain_design_mask"].float()
+        base_chain_design_token = feats["chain_design_mask"].float()
+        base_target_token = 1 - feats["chain_design_mask"].float()
     else:
-        is_chain_design_token = feats["design_mask"].float()
-        is_target_token = 1 - feats["design_mask"].float()
+        base_chain_design_token = feats["design_mask"].float()
+        base_target_token = 1 - feats["design_mask"].float()
+    is_chain_design_token = base_chain_design_token.repeat_interleave(multiplicity, 0)
+    is_target_token = base_target_token.repeat_interleave(multiplicity, 0)
     design_iptm_mask = (
         maski[:, :, None]
         * mask_pad[:, None, :]
@@ -261,7 +263,7 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
         dim=1,
     ).values
 
-    is_design_token = feats["design_mask"].float()
+    is_design_token = feats["design_mask"].float().repeat_interleave(multiplicity, 0)
     is_target_token = 1 - is_chain_design_token
 
     design_to_target_iptm_mask = (
@@ -280,13 +282,17 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
     ).values
 
     # iPTM between designed residues and any token from a different chain
+    is_design_token_for_res = feats["design_mask"].float().repeat_interleave(
+        multiplicity, 0
+    )
     design_residue_iptm_mask = (
         maski[:, :, None]
         * mask_pad[:, None, :]
         * mask_pad[:, :, None]
         * (asym_id[:, None, :] != asym_id[:, :, None])
         * (
-            is_design_token[:, :, None] + is_design_token[:, None, :]
+            is_design_token_for_res[:, :, None]
+            + is_design_token_for_res[:, None, :]
         ).clamp(max=1)
     )
     design_residue_iptm = torch.max(
@@ -342,19 +348,44 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
 
     # Compute mask of part of design that has an atom within X Angstrom of any target atom
     x_pred_half = x_preds.bfloat16()
-    interact_mask = torch.zeros_like(feats["design_mask"])
+    BM = x_pred_half.shape[0]  # B * multiplicity
+    interact_mask = torch.zeros(
+        BM,
+        feats["design_mask"].shape[1],
+        device=feats["design_mask"].device,
+        dtype=feats["design_mask"].dtype,
+    )
     if (
         is_chain_design_token.sum() > 0
         and (1 - is_chain_design_token.int()).sum() > 0
     ):
-        atom_chain_design_mask = (torch.bmm(    feats["atom_to_token"].bfloat16(),    feats["chain_design_mask"].bfloat16().unsqueeze(-1),).squeeze(-1).bool())
-        x_target = x_pred_half[~atom_chain_design_mask]
-        x_design = x_pred_half[atom_chain_design_mask]
-        dists = torch.cdist(x_target, x_design)
-        atom_interact_mask = torch.zeros_like(atom_chain_design_mask)
-        atom_interact_mask[atom_chain_design_mask] = (dists.min(0)[0] < 8).unsqueeze(0)
-        index = torch.argmax(feats["atom_to_token"].int(), dim=-1)
-        interact_mask.scatter_(dim=1, index=index, src=atom_interact_mask)
+        atom_chain_design_mask = (torch.bmm(    feats["atom_to_token"].bfloat16(),    base_chain_design_token.bfloat16().unsqueeze(-1),).squeeze(-1).bool())
+        atom_chain_design_mask = atom_chain_design_mask.repeat_interleave(
+            multiplicity, 0
+        )
+        atom_pad_mask = feats["atom_pad_mask"].bool().repeat_interleave(multiplicity, 0)
+        index = torch.argmax(feats["atom_to_token"].int(), dim=-1).repeat_interleave(
+            multiplicity, 0
+        )
+        # Each sample has its own coordinates, so distances are per-sample; the
+        # flattened form only worked while B * multiplicity was 1.
+        for i in range(BM):
+            design_atom_mask = atom_chain_design_mask[i] & atom_pad_mask[i]
+            target_atom_mask = (~atom_chain_design_mask[i]) & atom_pad_mask[i]
+            if not design_atom_mask.any() or not target_atom_mask.any():
+                continue
+            x_design = x_pred_half[i, design_atom_mask]
+            x_target = x_pred_half[i, target_atom_mask]
+            dists = torch.cdist(x_target.unsqueeze(0), x_design.unsqueeze(0)).squeeze(0)
+            atom_interact_mask = torch.zeros(
+                x_pred_half.shape[1],
+                device=x_pred_half.device,
+                dtype=interact_mask.dtype,
+            )
+            atom_interact_mask[torch.where(design_atom_mask)[0]] = (
+                dists.min(dim=0)[0] < 8
+            ).to(interact_mask.dtype)
+            interact_mask[i].scatter_(dim=0, index=index[i], src=atom_interact_mask)
 
     # Compute interface interaction pTM values: iipTM
     # Any ptm of the design that is interacting with the target to anything in the target

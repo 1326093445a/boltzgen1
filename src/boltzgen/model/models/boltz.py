@@ -511,6 +511,7 @@ class Boltz(LightningModule):
         multiplicity_diffusion_train: int = 1,
         diffusion_samples: int = 1,
         run_confidence_sequentially: bool = False,
+        confidence_chunk_size: int = 0,
         return_z_feats: bool = False,
         step_scale: Optional[float] = None,
         noise_scale: Optional[float] = None,
@@ -745,6 +746,7 @@ class Boltz(LightningModule):
                     pred_distogram_logits=(dict_out["pdistogram"][:, :, :, 0].detach()),
                     multiplicity=diffusion_samples,
                     run_sequentially=run_confidence_sequentially,
+                    confidence_chunk_size=confidence_chunk_size,
                     use_kernels=self.use_kernels,
                 )
             )
@@ -1286,6 +1288,9 @@ class Boltz(LightningModule):
                 num_sampling_steps=self.predict_args["sampling_steps"],
                 diffusion_samples=self.predict_args["diffusion_samples"],
                 run_confidence_sequentially=True,
+                confidence_chunk_size=self.predict_args.get(
+                    "confidence_chunk_size", 0
+                ),
                 step_scale=step_scale,
                 noise_scale=noise_scale,
                 return_z_feats=(
