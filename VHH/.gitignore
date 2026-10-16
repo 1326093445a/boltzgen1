@@ -1,0 +1,8 @@
+# Pipeline outputs: a 300k-design run is >150 GiB; never track these.
+output/
+output*/
+*/intermediate_designs/
+*/intermediate_designs_inverse_folded/
+*/final_ranked_designs/
+# boltzgen check visualisations
+yaml/*.cif

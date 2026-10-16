@@ -23,15 +23,29 @@
 #   BUDGET=1000          size of the final diversity-optimised set (global)
 #   FOLD_BATCH=10        refolding batch size (structure prediction); see note
 #   SPEC=                override the design spec path
+#
+# Output: pass it as the first argument, absolute path recommended:
+#   bash sh/run_jn1_vhh40.sh /data/jn1_vhh40_300k
+# Default is <VHH>/output. Budget ~150+ GiB of disk for 300k designs
+# (~0.5 MiB/design for design + inverse-folded + refold artifacts, plus
+# esmfold2 and analysis outputs on top).
 #   ALPHA=               leave empty for the BoltzGen1 default
 #   REUSE=true           resume completed work
 #   EXTRA_ARGS=""        passed straight through to `boltzgen run`
 #
-# NOTE on DIFF_BATCH: BoltzGen defaults to 10 for runs >=100 designs, but all
-# designs in one diffusion batch share a single YAML parse - so they share one
-# framework AND one CDR-length combo AND one trunk run. At the default, 300k
-# designs would be only 30k independent draws. DIFF_BATCH=1 is the deliberate
-# deviation; raise it only to trade independence for throughput.
+# NOTE on DIFF_BATCH: all designs in one diffusion batch share a single YAML
+# parse - so they share one framework, one CDR-length combo AND one trunk run,
+# differing only by diffusion noise. multiplicity = num_designs/DIFF_BATCH is
+# therefore the number of INDEPENDENT (framework, length) draws:
+#     DIFF_BATCH   parses    draws/framework   draws/combo   designs/combo
+#          1       300,000        7,500             167           167
+#          5        60,000        1,500              33           167
+#         10        30,000          750              17           167
+# Designs per combo is unchanged; what shrinks is independent draws, and with
+# correlated batch-mates the effective n per combo shrinks with it.
+# 5 is chosen as the speed/resolution compromise: framework rankings stay strong
+# (1,500 draws each) while the trunk cost is amortised 5x. Use 1 if combo-level
+# rankings matter most, 10 if throughput dominates.
 #
 # NOTE on FOLD_BATCH: the folding (structure prediction) step batches designs with
 # no statistical cost - by then each design is already fixed, so this is pure
@@ -55,11 +69,21 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PKG_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Output dir: first positional arg, default <VHH>/output. Relative paths are
+# resolved against the CURRENT directory, so they are made absolute here to
+# avoid landing somewhere unexpected. Expect ~150+ GiB for a 300k run, so point
+# this at a disk with room - ideally outside the git repo.
 OUT="${1:-${PKG_DIR}/output}"
+case "${OUT}" in
+  /*) ;;
+  *) OUT="$(pwd)/${OUT}" ;;
+esac
+mkdir -p "${OUT}"
+OUT="$(cd "${OUT}" && pwd)"
 
 SPEC="${SPEC:-${PKG_DIR}/yaml/vhh40_combined.yaml}"
 NUM_DESIGNS="${NUM_DESIGNS:-300000}"
-DIFF_BATCH="${DIFF_BATCH:-1}"
+DIFF_BATCH="${DIFF_BATCH:-5}"
 BUDGET="${BUDGET:-1000}"
 FOLD_BATCH="${FOLD_BATCH:-10}"
 REUSE="${REUSE:-true}"
@@ -85,7 +109,7 @@ if [[ "${N_FW}" -gt 0 ]]; then
   echo "Per framework:    ~$(( NUM_DESIGNS / N_FW ))"
   echo "Per length combo: ~$(( NUM_DESIGNS / (N_FW * 45) ))  (45 combos each)"
 fi
-echo "Diffusion batch:  ${DIFF_BATCH}  (independent framework+length draw per design)"
+echo "Diffusion batch:  ${DIFF_BATCH}  -> $(( NUM_DESIGNS / DIFF_BATCH )) independent framework+length draws"
 echo "Final set budget: ${BUDGET} (global across frameworks)"
 echo "Refold batch:     ${FOLD_BATCH}  (x5 diffusion samples = $(( FOLD_BATCH * 5 )) structures in flight)"
 echo "Hotspot:          chain T 158,159,161,164,166,167"
