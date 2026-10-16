@@ -39,6 +39,7 @@ class Predict(Task):
         recycling_steps: int,
         sampling_steps: int,
         diffusion_samples: int = 1,
+        confidence_chunk_size: int = 0,
         keys_dict_out: Optional[List] = None,
         keys_dict_batch: Optional[List] = None,
         slurm: bool = False,
@@ -81,6 +82,7 @@ class Predict(Task):
             "recycling_steps": recycling_steps,
             "sampling_steps": sampling_steps,
             "diffusion_samples": diffusion_samples,
+            "confidence_chunk_size": confidence_chunk_size,
         }
         if keys_dict_batch is not None:
             self.predict_args["keys_dict_batch"] = keys_dict_batch
