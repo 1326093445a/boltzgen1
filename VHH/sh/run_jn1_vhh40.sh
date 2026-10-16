@@ -21,7 +21,7 @@
 #   NUM_DESIGNS=300000   total designs across all frameworks
 #   DIFF_BATCH=1         see note; 1 keeps every design an independent draw
 #   BUDGET=1000          size of the final diversity-optimised set (global)
-#   FOLD_BATCH=1         refolding batch size; >1 is unvalidated, see note
+#   FOLD_BATCH=10        refolding batch size (independent designs per forward)
 #   SPEC=                override the design spec path
 #
 # Output: pass it as the first argument, absolute path recommended:
@@ -47,41 +47,30 @@
 # (1,500 draws each) while the trunk cost is amortised 5x. Use 1 if combo-level
 # rankings matter most, 10 if throughput dominates.
 #
-# NOTE on FOLD_BATCH: 1 is the default because it is the only value this
-# pipeline has actually been run at. Larger values are worth testing but are
-# not yet validated.
+# NOTE on FOLD_BATCH: this is data.cfg.batch_size for the folding step - the
+# number of INDEPENDENT designs per forward pass. It is a different axis from
+# --diffusion_batch_size, which the CLI passes through as diffusion_samples
+# (several structures from one trunk run). Both multiply the work in flight:
+#     structures in flight = FOLD_BATCH * diffusion_samples
+# At FOLD_BATCH=10 with fold.yaml's diffusion_samples=5 that is 50.
 #
-# Until the confidence_chunk_size work landed, >1 could not work at all:
-# predict_step calls the model with run_confidence_sequentially=True, and that
-# path asserted a data batch of 1. FOLD_BATCH=10 crashed the folding step on its
-# first prediction, and because one rank dying leaves the others blocked in a
-# collective it reported as a silent hang rather than an error.
+# REQUIREMENT: confidence_chunk_size must equal diffusion_samples. fold.yaml
+# sets both to 5, so the default works. If you override one, override both:
+#     EXTRA_ARGS="--config folding diffusion_samples=N confidence_chunk_size=N"
+# When confidence_chunk_size is smaller than diffusion_samples the confidence
+# module takes its chunked path, which asserts a batch of 1 and makes
+# FOLD_BATCH > 1 fail. That assert is also why FOLD_BATCH=10 crashed before
+# the confidence_chunk_size support landed: one rank died on its first
+# prediction and the rest blocked in a collective, so it looked like a hang
+# rather than an error. If folding ever appears to stall with idle GPUs, grep
+# the log for a traceback before assuming a deadlock.
 #
-# With confidence_chunk_size == diffusion_samples that assertion is no longer
-# reached (multiplicity > chunk_size is false, so the chunked branch is skipped)
-# and the batched path expands feats to batch * multiplicity correctly. So >1 is
-# now plausible. It is still untested, and batch-1 assumptions remain elsewhere
-# in the codebase - rmsd_computation.py and several places in
-# model/models/boltz.py - so raise it stepwise and check the metrics:
-#     FOLD_BATCH=2, confirm all_designs_metrics.csv matches a batch-1 run,
-#     then 4, then higher. Folding is the long pole, so this is worth doing.
-#
-# An earlier version of this note gave peak_MiB ~= 4973 + 2062 * (batch *
-# diffusion_samples) and recommended batch 10. That extrapolation was from a
-# 24 GB card and predated the assertion being discovered; treat it as untrusted
-# until re-measured on the target GPU.
+# Memory is the only remaining limit and it has not been measured on an H200.
+# FOLD_BATCH=1 with 5 samples uses roughly 15 GiB. Watch nvidia-smi for the
+# first minute after raising it; an OOM here is immediate and loud.
 #
 # Parallelism also comes from the ranks: CUDA_VISIBLE_DEVICES sets the world
-# size and each rank takes NUM_DESIGNS/world_size designs. At batch 1 with
-# diffusion_samples=5 folding uses roughly 15 GiB per card.
-#
-# NOTE on confidence_chunk_size: fold.yaml sets it to 5, matching
-# diffusion_samples, so the confidence module runs once per design instead of
-# once per diffusion sample. Pass
-#     EXTRA_ARGS="--config folding confidence_chunk_size=0"
-# to restore the old per-sample behaviour, which is useful for checking that the
-# two agree on a handful of designs. Note that 0 also re-enables the batch-1
-# assertion, so it cannot be combined with FOLD_BATCH > 1.
+# size and each rank takes NUM_DESIGNS/world_size designs.
 #
 # NOTE on BUDGET: this produces ONE final_ranked_designs set across all 40
 # frameworks. Per-framework analysis comes from all_designs_metrics.csv via
@@ -108,18 +97,19 @@ SPEC="${SPEC:-${PKG_DIR}/yaml/vhh40_combined.yaml}"
 NUM_DESIGNS="${NUM_DESIGNS:-300000}"
 DIFF_BATCH="${DIFF_BATCH:-5}"
 BUDGET="${BUDGET:-1000}"
-FOLD_BATCH="${FOLD_BATCH:-1}"
+FOLD_BATCH="${FOLD_BATCH:-10}"
 REUSE="${REUSE:-true}"
 ALPHA="${ALPHA:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
 [[ -f "${SPEC}" ]] || { echo "Design spec not found: ${SPEC}" >&2; exit 1; }
 
-if [[ "${FOLD_BATCH}" != "1" ]]; then
-  echo "NOTE: FOLD_BATCH=${FOLD_BATCH}. Values >1 are unvalidated; they need" >&2
-  echo "      confidence_chunk_size == diffusion_samples (fold.yaml sets this)." >&2
-  echo "      If folding appears to hang with idle GPUs, a rank has crashed -" >&2
-  echo "      check the log for a traceback before assuming a deadlock." >&2
+if [[ "${FOLD_BATCH}" != "1" && "${EXTRA_ARGS}" == *diffusion_samples* \
+      && "${EXTRA_ARGS}" != *confidence_chunk_size* ]]; then
+  echo "ERROR: EXTRA_ARGS overrides diffusion_samples without setting" >&2
+  echo "       confidence_chunk_size to match. With FOLD_BATCH > 1 the folding" >&2
+  echo "       step will fail on its first prediction. See NOTE on FOLD_BATCH." >&2
+  exit 1
 fi
 N_FW="$(grep -c '_scaffold\.yaml' "${SPEC}" || true)"
 
@@ -141,7 +131,7 @@ if [[ "${N_FW}" -gt 0 ]]; then
 fi
 echo "Diffusion batch:  ${DIFF_BATCH}  -> $(( NUM_DESIGNS / DIFF_BATCH )) independent framework+length draws"
 echo "Final set budget: ${BUDGET} (global across frameworks)"
-echo "Refold batch:     ${FOLD_BATCH}  (x5 diffusion samples = $(( FOLD_BATCH * 5 )) structures in flight; must be 1)"
+echo "Refold batch:     ${FOLD_BATCH}  (x5 diffusion samples = $(( FOLD_BATCH * 5 )) structures in flight)"
 echo "Hotspot:          chain T 158,159,161,164,166,167"
 echo "Output:           ${OUT}"
 echo ""
