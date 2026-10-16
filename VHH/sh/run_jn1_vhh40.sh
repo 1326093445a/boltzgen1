@@ -21,7 +21,7 @@
 #   NUM_DESIGNS=300000   total designs across all frameworks
 #   DIFF_BATCH=1         see note; 1 keeps every design an independent draw
 #   BUDGET=1000          size of the final diversity-optimised set (global)
-#   FOLD_BATCH=10        refolding batch size (independent designs per forward)
+#   FOLD_BATCH=15        refolding batch size (independent designs per forward)
 #   SPEC=                override the design spec path
 #
 # Output: pass it as the first argument, absolute path recommended:
@@ -52,7 +52,14 @@
 # --diffusion_batch_size, which the CLI passes through as diffusion_samples
 # (several structures from one trunk run). Both multiply the work in flight:
 #     structures in flight = FOLD_BATCH * diffusion_samples
-# At FOLD_BATCH=10 with fold.yaml's diffusion_samples=5 that is 50.
+# At FOLD_BATCH=15 with fold.yaml's diffusion_samples=5 that is 75.
+#
+# Measured on 8x H200 (143771 MiB each), FOLD_BATCH=10 x 5 samples:
+#     51.5 GiB per card, 99-100% util, 624-678W of a 700W cap.
+# Memory scales sub-linearly, so 15 should land near 70-75 GiB. Note the cards
+# were already compute-saturated at 10, so a larger batch may not raise
+# throughput - judge it on designs/second at steady state, not on the ETA shown
+# during the first iterations, which includes JIT and CUDA-graph warmup.
 #
 # REQUIREMENT: confidence_chunk_size must equal diffusion_samples. fold.yaml
 # sets both to 5, so the default works. If you override one, override both:
@@ -97,7 +104,7 @@ SPEC="${SPEC:-${PKG_DIR}/yaml/vhh40_combined.yaml}"
 NUM_DESIGNS="${NUM_DESIGNS:-300000}"
 DIFF_BATCH="${DIFF_BATCH:-5}"
 BUDGET="${BUDGET:-1000}"
-FOLD_BATCH="${FOLD_BATCH:-10}"
+FOLD_BATCH="${FOLD_BATCH:-15}"
 REUSE="${REUSE:-true}"
 ALPHA="${ALPHA:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
