@@ -5,6 +5,12 @@ Two leading-axis conventions share a folding prediction. Per-design features
 pLDDT and the confidence metrics carry one entry per (design, diffusion
 sample), laid out design-major. Confusing the two does not raise - it mislabels
 output - so the arithmetic lives here on its own and is tested directly.
+
+Batching also pads: every design in a batch is extended to the longest one in
+it. A batch of one has nothing to pad to, so files written that way hold exact
+lengths, and downstream analysis aligns folded coordinates against the design's
+own atoms element-wise. Padding therefore has to come back off before writing,
+or the extra rows silently shift every RMSD and lDDT.
 """
 
 import numpy as np
@@ -52,3 +58,46 @@ def pick(value, design: int, lo: int, best: int, n_designs: int, n_samples: int)
     if count == n_designs:
         return value[design]
     return value[0]
+
+
+def real_extent(pad_mask, design: int, n_designs: int):
+    """How many atoms or tokens this design really has, behind the pad mask."""
+    if pad_mask is None:
+        return None
+    mask = np.asarray(pad_mask)
+    if mask.ndim >= 1 and mask.shape[0] == n_designs:
+        return int(mask[design].sum())
+    if mask.ndim == 1:
+        return int(mask.sum())
+    return None
+
+
+def trim(value, real_atoms, real_tokens, ref_atom_len, ref_tokens_len):
+    """Drop batch padding from one design's array, for the copy written to disk.
+
+    Any axis as long as the padded atom extent is cut to this design's real
+    atom count, and likewise for tokens. The reference lengths come from the
+    data itself (coordinates for atoms, residue types for tokens) rather than
+    from the mask, so an axis that merely happens to match a mask length is
+    left alone.
+
+    Only the saved copy is trimmed. The structure handed to Structure.from_feat
+    keeps its padded shapes, because it is read alongside batch-derived masks
+    such as atom_pad_mask that are still padded.
+    """
+    if not isinstance(value, np.ndarray) or value.ndim == 0:
+        return value
+    out = value
+    for axis in range(out.ndim):
+        length = out.shape[axis]
+        if real_atoms is not None and ref_atom_len is not None \
+                and length == ref_atom_len and real_atoms < length:
+            index = [slice(None)] * out.ndim
+            index[axis] = slice(0, real_atoms)
+            out = out[tuple(index)]
+        elif real_tokens is not None and ref_tokens_len is not None \
+                and length == ref_tokens_len and real_tokens < length:
+            index = [slice(None)] * out.ndim
+            index[axis] = slice(0, real_tokens)
+            out = out[tuple(index)]
+    return out

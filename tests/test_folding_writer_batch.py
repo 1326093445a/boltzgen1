@@ -47,6 +47,59 @@ def _split(arrays, n_design, n_sample):
         out[d] = (stored, drawn, best - lo)
     return out
 
+def _test_padding():
+    """A padded batch of different-length designs must save unpadded arrays.
+
+    Batching pads every design to the longest in the batch. A batch of one
+    never pads, and analysis re-featurises each design alone and compares
+    shapes, so the saved copy has to come back to the design's real extent.
+    """
+    from boltzgen.task.predict.batch_slicing import real_extent, trim
+
+    lengths = [(297, 2376), (316, 2528), (304, 2432)]     # (tokens, atoms)
+    pad_tok = max(t for t, _ in lengths)
+    pad_atom = max(a for _, a in lengths)
+    rng = np.random.default_rng(7)
+
+    atom_pad_mask = np.zeros((len(lengths), pad_atom), dtype=bool)
+    token_pad_mask = np.zeros((len(lengths), pad_tok), dtype=bool)
+    for d, (n_tok, n_atom) in enumerate(lengths):
+        atom_pad_mask[d, :n_atom] = True
+        token_pad_mask[d, :n_tok] = True
+
+    ok = True
+    print(f"\n{'design':8s} {'tokens':>14s} {'atoms':>14s} {'padding gone':>13s}")
+    print("-" * 54)
+    for d, (n_tok, n_atom) in enumerate(lengths):
+        saved = {
+            "coords": rng.normal(size=(1, pad_atom, 3)),
+            "res_type": rng.integers(0, 20, size=(1, pad_tok)),
+            "atom_to_token": rng.uniform(size=(1, pad_atom, pad_tok)),
+            "design_ptm": rng.uniform(size=1),            # no sequence axis
+        }
+        real_atoms = real_extent(atom_pad_mask, d, len(lengths))
+        real_tokens = real_extent(token_pad_mask, d, len(lengths))
+        res_type = saved["res_type"]
+        while res_type.ndim > 1 and res_type.shape[0] == 1:
+            res_type = res_type[0]
+        out = {
+            k: trim(v, real_atoms, real_tokens, saved["coords"].shape[-2],
+                    res_type.shape[0])
+            for k, v in saved.items()
+        }
+        got_tok = out["res_type"].shape[-1]
+        got_atom = out["coords"].shape[-2]
+        good = (got_tok == n_tok and got_atom == n_atom
+                and out["atom_to_token"].shape == (1, n_atom, n_tok)
+                and out["design_ptm"].shape == (1,))
+        ok &= good
+        print(f"{d:<8d} {f'{got_tok} (want {n_tok})':>14s} "
+              f"{f'{got_atom} (want {n_atom})':>14s} {str(good):>13s}")
+    print("-" * 54)
+    print(f"batch padded to {pad_tok} tokens / {pad_atom} atoms; "
+          f"untrimmed output would mis-align every RMSD")
+    return ok
+
 
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
@@ -94,5 +147,7 @@ if __name__ == "__main__":
     print("-" * 50)
     print(f"single argmax over the whole batch would give index {old_best} "
           f"(design {old_best // N_SAMPLE}) for every design")
+    ok &= _test_padding()
+
     print("PASS" if ok else "FAIL")
     sys.exit(0 if ok else 1)

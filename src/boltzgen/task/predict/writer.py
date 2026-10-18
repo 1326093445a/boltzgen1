@@ -14,7 +14,13 @@ from tqdm import tqdm
 
 from boltzgen.data import const
 from boltzgen.data.source_context import update_designed
-from boltzgen.task.predict.batch_slicing import design_spans, pick, take
+from boltzgen.task.predict.batch_slicing import (
+    design_spans,
+    pick,
+    real_extent,
+    take,
+    trim,
+)
 from boltzgen.data.data import (
     Structure,
     convert_ccd,
@@ -163,6 +169,12 @@ class FoldingWriter(BasePredictionWriter):
         confidence = 0.8 * full["design_to_target_iptm"] + 0.2 * full["design_ptm"]
         spans = design_spans(n_designs, n_samples, confidence)
 
+        # Batching pads every design out to the longest in the batch, and
+        # analysis re-featurises each design alone and compares shapes. So the
+        # copy written to disk is trimmed back to this design's real extent -
+        # but only that copy. Structure.from_feat below is read alongside
+        # batch-derived masks like atom_pad_mask, which are still padded, so
+        # the structure input keeps its padded shapes.
         for design, (lo, hi, best) in enumerate(spans):
             pred_dict = {
                 key: take(value, design, lo, hi, n_designs, n_samples)
@@ -198,7 +210,23 @@ class FoldingWriter(BasePredictionWriter):
             archive_path.unlink(missing_ok=True)
             with open(self.refold_cif_dir / f"{design_id}.cif", "w") as cif_file:
                 cif_file.write(cif_text)
-            _write_npz_atomically(archive_path, **pred_dict)
+
+            this_atoms = real_extent(batch.get("atom_pad_mask"), design, n_designs)
+            this_tokens = real_extent(batch.get("token_pad_mask"), design, n_designs)
+            ref_atom_len = (
+                pred_dict["coords"].shape[-2] if "coords" in pred_dict else None
+            )
+            ref_tokens_len = None
+            if "res_type" in pred_dict:
+                res_type = pred_dict["res_type"]
+                while res_type.ndim > 1 and res_type.shape[0] == 1:
+                    res_type = res_type[0]
+                ref_tokens_len = res_type.shape[0] if res_type.ndim >= 1 else None
+            to_save = {
+                key: trim(value, this_atoms, this_tokens, ref_atom_len, ref_tokens_len)
+                for key, value in pred_dict.items()
+            }
+            _write_npz_atomically(archive_path, **to_save)
 
     def on_predict_epoch_end(
         self,
