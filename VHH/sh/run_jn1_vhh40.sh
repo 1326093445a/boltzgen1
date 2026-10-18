@@ -27,6 +27,8 @@
 #   ESM_SAMPLES=1        structures per design in esmfold2_scoring
 #   ESM_LOOPS=20         esmfold2 trunk loops; the dominant cost, see note
 #   ESM_ACCEL=auto       auto | fused | off, see note
+#   STEPS=               e.g. "esmfold2_scoring analysis filtering" to resume
+#   SRC_CTX=             source_context sidecars; auto-used at <out>/source_context
 #   SPEC=                override the design spec path
 #
 # Output: pass it as the first argument, absolute path recommended:
@@ -111,6 +113,24 @@
 # Parallelism also comes from the ranks: CUDA_VISIBLE_DEVICES sets the world
 # size and each rank takes NUM_DESIGNS/world_size designs.
 #
+# NOTE on SRC_CTX and STEPS: esmfold2_scoring runs ESMC over each chain's
+# COMPLETE source sequence, and refuses any chain it cannot prove it has one
+# for. An ATOM-only PDB carries no SEQRES, so both inputs here are stored with
+# complete=false, and that flag is baked into every design's metadata at design
+# time - editing the YAML cannot reach designs already generated. Symptom:
+#     ValueError: Full sequence is unavailable for T (...JN1_RBD_clean.pdb)
+# after folding has already finished. Fix without refolding:
+#     python sh/make_source_context_sidecars.py \
+#       --design-dir <out>/intermediate_designs_inverse_folded \
+#       --out-dir <out>/source_context --apply --workers 32
+#     STEPS="esmfold2_scoring analysis filtering" bash sh/run_jn1_vhh40.sh <out>
+# <out>/source_context is picked up automatically once it exists. The generator
+# refuses any chain whose residues are not a contiguous run from position 1, so
+# a genuinely truncated chain is never silently declared complete; read its
+# docstring before relying on it. The lasting fix is to declare full_sequences
+# for both chains in the YAML, or restore SEQRES to the two PDBs, so newly
+# generated designs carry a complete context.
+#
 # NOTE on BUDGET: this produces ONE final_ranked_designs set across all 40
 # frameworks. Per-framework analysis comes from all_designs_metrics.csv via
 #   python scripts/assign_framework.py <out>/final_ranked_designs/all_designs_metrics.csv
@@ -142,6 +162,10 @@ FOLD_RECYCLING="${FOLD_RECYCLING:-3}"
 ESM_SAMPLES="${ESM_SAMPLES:-1}"
 ESM_LOOPS="${ESM_LOOPS:-20}"
 ESM_ACCEL="${ESM_ACCEL:-auto}"
+STEPS="${STEPS:-}"
+# Auto-used when present; sh/make_source_context_sidecars.py writes it.
+SRC_CTX="${SRC_CTX:-${OUT}/source_context}"
+[[ -d "${SRC_CTX}" ]] || SRC_CTX=""
 REUSE="${REUSE:-true}"
 ALPHA="${ALPHA:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
@@ -157,10 +181,15 @@ if [[ "${EXTRA_ARGS}" == *diffusion_samples* || "${EXTRA_ARGS}" == *confidence_c
 fi
 N_FW="$(grep -c '_scaffold\.yaml' "${SPEC}" || true)"
 
+ESM_CFG=(--config esmfold2_scoring "diffusion_samples=${ESM_SAMPLES}" "num_loops=${ESM_LOOPS}")
+[[ -n "${SRC_CTX}" ]] && ESM_CFG+=("source_context_dir=${SRC_CTX}")
+
 OPT=()
 [[ "${REUSE}" == "true" ]] && OPT+=(--reuse)
 [[ -n "${ALPHA}" ]] && OPT+=(--alpha "${ALPHA}")
 # shellcheck disable=SC2206
+# shellcheck disable=SC2206
+[[ -n "${STEPS}" ]] && OPT+=(--steps ${STEPS})
 [[ -n "${EXTRA_ARGS}" ]] && OPT+=(${EXTRA_ARGS})
 
 echo "========================================"
@@ -178,6 +207,8 @@ echo "Final set budget: ${BUDGET} (global across frameworks)"
 echo "Refold batch:     ${FOLD_BATCH}  (x${FOLD_SAMPLES} diffusion samples = $(( FOLD_BATCH * FOLD_SAMPLES )) structures in flight)"
 echo "Refold samples:   ${FOLD_SAMPLES} structure(s) per design, ${FOLD_RECYCLING} recycling steps"
 echo "ESMFold2:         ${ESM_SAMPLES} sample(s), ${ESM_LOOPS} loops, acceleration=${ESM_ACCEL}"
+echo "Source context:   ${SRC_CTX:-<none; esmfold2_scoring needs one for ATOM-only PDBs>}"
+echo "Steps:            ${STEPS:-all 6}"
 echo "Hotspot:          chain T 158,159,161,164,166,167"
 echo "Output:           ${OUT}"
 echo ""
@@ -190,7 +221,7 @@ boltzgen run "${SPEC}" \
   --diffusion_batch_size "${DIFF_BATCH}" \
   --budget "${BUDGET}" \
   --config folding data.cfg.batch_size="${FOLD_BATCH}" recycling_steps="${FOLD_RECYCLING}" diffusion_samples="${FOLD_SAMPLES}" confidence_chunk_size="${FOLD_SAMPLES}" \
-  --config esmfold2_scoring diffusion_samples="${ESM_SAMPLES}" num_loops="${ESM_LOOPS}" \
+  "${ESM_CFG[@]}" \
   --esmfold2_acceleration "${ESM_ACCEL}" \
   "${OPT[@]}"
 set +x
