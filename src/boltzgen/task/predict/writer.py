@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 from boltzgen.data import const
 from boltzgen.data.source_context import update_designed
+from boltzgen.task.predict.batch_slicing import design_spans, pick, take
 from boltzgen.data.data import (
     Structure,
     convert_ccd,
@@ -122,7 +123,7 @@ class FoldingWriter(BasePredictionWriter):
         if isinstance(exception, list):
             exception = exception[0]
         if exception:
-            self.failed += 1
+            self.failed += len(batch["id"])
             return
         skip = prediction.get("skip", False)
         if isinstance(skip, list):
@@ -143,48 +144,61 @@ class FoldingWriter(BasePredictionWriter):
             if key in batch:
                 prediction[key] = batch[key]
 
-        pred_dict = {}
+        full = {}
         for key, value in prediction.items():
             # check object is tensor
             if key in const.eval_keys:
-                pred_dict[key] = value.cpu().numpy()
-        # Match the sample selected by analyze_utils.get_best_folding_sample.
-        confidence = (
-            0.8 * pred_dict["design_to_target_iptm"] + 0.2 * pred_dict["design_ptm"]
-        )
-        best_idx = np.argmax(confidence)
+                full[key] = value.cpu().numpy()
 
-        prediction_out = {}
-        for k in prediction:
-            # Coordinates and pLDDT have a sample axis; structure features have
-            # a batch axis and are shared by all samples of this input.
-            if k in ("coords", "plddt"):
-                prediction_out[k] = prediction[k][best_idx]
-            elif k in ("exception", "skip", "token_level_confidence"):
-                continue
+        # Two leading-axis conventions share this dict: per-design features
+        # carry a batch axis of n_designs, while coordinates, pLDDT and the
+        # confidence metrics carry one entry per (design, diffusion sample).
+        # Everything below is written out one design at a time so each file
+        # holds exactly what a batch of one would have produced.
+        n_designs = len(batch["id"])
+        n_samples = max(1, len(full["coords"]) // n_designs)
+
+        # Match the sample selected by analyze_utils.get_best_folding_sample,
+        # but within each design: see boltzgen.task.predict.batch_slicing.
+        confidence = 0.8 * full["design_to_target_iptm"] + 0.2 * full["design_ptm"]
+        spans = design_spans(n_designs, n_samples, confidence)
+
+        for design, (lo, hi, best) in enumerate(spans):
+            pred_dict = {
+                key: take(value, design, lo, hi, n_designs, n_samples)
+                for key, value in full.items()
+            }
+
+            prediction_out = {}
+            for k in prediction:
+                if k in ("exception", "skip", "token_level_confidence"):
+                    continue
+                prediction_out[k] = pick(
+                    prediction[k], design, lo, best, n_designs, n_samples
+                )
+
+            # Write structure
+            structure, _, _ = Structure.from_feat(prediction_out)
+            if prediction.get("token_level_confidence", True):
+                plddt_atom = (
+                    prediction_out["atom_to_token"].float()
+                    @ prediction_out["plddt"].float()
+                )
             else:
-                prediction_out[k] = prediction[k][0]
-
-        # Write structure
-        structure, _, _ = Structure.from_feat(prediction_out)
-        if prediction.get("token_level_confidence", True):
-            plddt_atom = (
-                prediction_out["atom_to_token"].float()
-                @ prediction_out["plddt"].float()
+                plddt_atom = prediction_out["plddt"].float()
+            structure.atoms["bfactor"] = (
+                plddt_atom[prediction_out["atom_pad_mask"].bool()].float().cpu().numpy()
             )
-        else:
-            plddt_atom = prediction_out["plddt"].float()
-        structure.atoms["bfactor"] = (
-            plddt_atom[prediction_out["atom_pad_mask"].bool()].float().cpu().numpy()
-        )
-        cif_text = to_mmcif(structure)
-        # Publish the complete archive last. An interrupted overwrite must not
-        # leave an old completion marker paired with a new or partial CIF.
-        archive_path = self.outdir / f"{batch['id'][0]}.npz"
-        archive_path.unlink(missing_ok=True)
-        with open(self.refold_cif_dir / f"{batch['id'][0]}.cif", "w") as cif_file:
-            cif_file.write(cif_text)
-        _write_npz_atomically(archive_path, **pred_dict)
+            cif_text = to_mmcif(structure)
+            # Publish the complete archive last. An interrupted overwrite must
+            # not leave an old completion marker paired with a new or partial
+            # CIF.
+            design_id = batch["id"][design]
+            archive_path = self.outdir / f"{design_id}.npz"
+            archive_path.unlink(missing_ok=True)
+            with open(self.refold_cif_dir / f"{design_id}.cif", "w") as cif_file:
+                cif_file.write(cif_text)
+            _write_npz_atomically(archive_path, **pred_dict)
 
     def on_predict_epoch_end(
         self,

@@ -21,7 +21,7 @@
 #   NUM_DESIGNS=300000   total designs across all frameworks
 #   DIFF_BATCH=1         see note; 1 keeps every design an independent draw
 #   BUDGET=1000          size of the final diversity-optimised set (global)
-#   FOLD_BATCH=1         refolding batch size; >1 CORRUPTS OUTPUT, see note
+#   FOLD_BATCH=1         refolding batch size; >1 needs the fixed writer, see note
 #   FOLD_SAMPLES=1       structures refolded per design; see note
 #   FOLD_RECYCLING=3     recycling steps for refolding
 #   ESM_SAMPLES=1        structures per design in esmfold2_scoring
@@ -54,23 +54,28 @@
 # (1,500 draws each) while the trunk cost is amortised 5x. Use 1 if combo-level
 # rankings matter most, 10 if throughput dominates.
 #
-# NOTE on FOLD_BATCH: LEAVE THIS AT 1. It is data.cfg.batch_size for folding,
-# and the model accepts it, but FoldingWriter cannot write the result.
+# NOTE on FOLD_BATCH: designs per forward pass in folding. Raising it requires
+# the per-design folding writer; with the original writer any value above 1
+# destroyed the run silently.
 #
-# write_on_batch_end names its output batch["id"][0] and writes ONE file per
-# batch, so (FOLD_BATCH-1)/FOLD_BATCH of every batch is discarded with no
-# error and no entry in "failed structure predictions". Worse, it takes
-# coords and plddt at argmax over `confidence` while taking every other
-# feature at index 0; that argmax is meant to pick among diffusion samples,
-# but with FOLD_BATCH>1 it ranges over designs, so the file pairs one
-# design's coordinates with another's identity.
+# The symptom, so it is recognisable: write_on_batch_end named its output
+# batch["id"][0] and wrote ONE file per batch, discarding
+# (FOLD_BATCH-1)/FOLD_BATCH of the designs, and took coords and plddt at argmax
+# over `confidence` while taking every other feature at index 0. That argmax
+# chooses among diffusion samples; with FOLD_BATCH>1 it ranged over designs, so
+# each file paired one design's coordinates with another's identity.
+# FOLD_BATCH=15 ran 24.5 h on 8xH200, folded all 300,000 designs and left
+# 20,000 wrong files (2500 batches x 8 ranks), reporting 2500/2500 and
+# "Number of failed structure predictions: 0".
 #
-# Measured: FOLD_BATCH=15 for 24.5 h on 8xH200 folded all 300,000 designs and
-# left 20,000 files (2500 batches x 8 ranks), each of them wrong. The step
-# reported 2500/2500 and "Number of failed structure predictions: 0".
+# The writer now splits each batch per design through
+# boltzgen.task.predict.batch_slicing, dispatching on array length so every
+# file matches what a batch of one produces;
+# tests/test_folding_writer_batch.py pins that equivalence.
 #
-# Raising this is only safe once the writer handles a batch axis, and only
-# with a design-by-design diff against a FOLD_BATCH=1 run to prove it.
+# Worth confirming on any new value before a long run: iterations x FOLD_BATCH
+# x ranks must equal NUM_DESIGNS, and fold_out_npz must gain one file per
+# design rather than one per batch.
 #
 # NOTE on FOLD_SAMPLES: this is diffusion_samples for the folding step - how
 # many structures each design is refolded into. It multiplies the whole step.
@@ -184,12 +189,10 @@ EXTRA_ARGS="${EXTRA_ARGS:-}"
 [[ -f "${SPEC}" ]] || { echo "Design spec not found: ${SPEC}" >&2; exit 1; }
 
 if [[ "${FOLD_BATCH}" != "1" ]]; then
-  echo "ERROR: FOLD_BATCH=${FOLD_BATCH}. FoldingWriter.write_on_batch_end writes ONE" >&2
-  echo "       file per batch, named batch['id'][0], and mixes coordinates chosen by" >&2
-  echo "       argmax over the batch with features taken from element 0. Any value" >&2
-  echo "       above 1 silently drops (FOLD_BATCH-1)/FOLD_BATCH of the designs AND" >&2
-  echo "       corrupts the ones it keeps. Set FOLD_BATCH=1. See NOTE on FOLD_BATCH." >&2
-  exit 1
+  echo "NOTE: FOLD_BATCH=${FOLD_BATCH} needs the per-design folding writer" >&2
+  echo "      (boltzgen.task.predict.batch_slicing). On a new value, check that" >&2
+  echo "      iterations x FOLD_BATCH x ranks equals NUM_DESIGNS and that" >&2
+  echo "      fold_out_npz gains one file per DESIGN, not one per batch." >&2
 fi
 
 if [[ "${EXTRA_ARGS}" == *diffusion_samples* || "${EXTRA_ARGS}" == *confidence_chunk_size* ]]; then
